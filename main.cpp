@@ -39,11 +39,6 @@ struct Point {
 
 class Triangle {
 private:
-    struct Point {
-        double x;
-        double y;
-    };
-    
     vector<double> alpha[3];
     
     Point points[3];
@@ -103,6 +98,13 @@ public:
         
     }
     
+    Triangle(Point a, Point b, Point c){
+        points[0] = a;
+        points[1] = b;
+        points[2] = c;
+    }
+    
+    
     // Функция для проверки, лежит ли заданная точка внутри треугольника
     bool isPointInside(double x, double y) {
         Point t = {x,y};
@@ -129,6 +131,10 @@ public:
         }
         return res;
     }
+    
+    Point getVertex1() const { return points[0]; }
+    Point getVertex2() const { return points[1]; }
+    Point getVertex3() const { return points[2]; }
     
 };
 
@@ -204,10 +210,29 @@ vector<vector<Point>> triangulateRectangle(vector<Point> rectangle) {
 }
 
 
-double calculateL(Point p1, Point p2, Point d){
-    double res;
-    res=((d.x-p1.x)*(p2.y-p1.y))-((d.y-p1.y)*(p2.x-p1.x));
-    return res;
+vector<Triangle> Make_Triangulation_Delane(Triangle MasterTriangle, vector<Point> points){
+    vector<Triangle> triangles;
+    //Найти треугольник которому принадлежит точка
+    //Созать 4 новых треугольника по 4м точкам
+    //Добавить 4 треугольника в масив
+    triangles.push_back(MasterTriangle);
+    for(int i=0; i<points.size(); i++){
+        for(int j=0; j<triangles.size(); j++){
+            if(triangles[j].isPointInside(points[i].x,points[i].y)){
+                Triangle T=triangles[j];
+                Triangle A(T.getVertex1(), T.getVertex2(), points[i]);
+                Triangle B(T.getVertex1(), points[i], T.getVertex3());
+                Triangle C(points[i], T.getVertex2(), T.getVertex3());
+                triangles.erase(triangles.begin() + j);
+                triangles.push_back(A);
+                triangles.push_back(B);
+                triangles.push_back(C);
+                break;
+            }
+        }
+    }
+    
+    return triangles;
 }
 
 int main() {
@@ -235,10 +260,28 @@ int main() {
         }
     }
     
-    cout << Triangles[0].Pf(0, 0)<<  endl;
+    //cout << Triangles[0].Pf(0, 0)<<  endl;
     
     //последний параметр отвечает за то насколько мелкой будет сетка
-    vector<Point> AproxPoints = calculatePfValuesForNet(Triangles, x1, y1, x2, y2, 50);
+    
+    vector<Triangle> Triangles2;
+    vector<Point> Point2(5);
+    
+    Point2[0] = {0, 0};
+    Point2[1] = {1, 1};
+    Point2[2] = {-1, -1};
+    Point2[3] = {3, 4};
+    Point2[4] = {-5, 2};
+    
+    for(int i=0; i<Point2.size(); i++){
+        Point2[i].z=fn(Point2[i].x, Point2[i].y);
+    }
+    
+    Triangle MasterTriangle(-10, -10, -10, 10, 10, 0);
+    
+    Triangles2 = Make_Triangulation_Delane(MasterTriangle, Point2);
+    
+    vector<Point> AproxPoints = calculatePfValuesForNet(Triangles2, x1, y1, x2, y2, 50);
     
     //считаем реальные значения в точках  (x,y)
     
@@ -251,14 +294,9 @@ int main() {
         RealPoints.push_back(help);
     }
     
-    Point a = {1, 1};
-    Point b = {4, 5};
-    Point c = {2, 3};
-    
     write_points(RealPoints, "original_points.txt");
     write_points(AproxPoints, "interpolated_points.txt");
     
-    cout <<"="<<calculateL(a, b, c) << endl;
     return 0;
 }
 
