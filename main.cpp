@@ -19,129 +19,21 @@
  5 Вычисляем значение Pf в каждой точке сетки, проверяя что точка лежит внутри фигуры
  6 Вычисляем реальные значения функции из пункта 5
  7 Записываем точки в два файла
- */
+*/
 
 #include <iostream>
 #include <cmath>
 #include <vector>
 #include <fstream>
 #include <math.h>
+#include "Triangle.hpp"
+#include "Point.hpp"
+#include "inputFunction.hpp"
 
 using namespace std;
 
-double fn(double x, double y);
 
-struct Point {
-    double x;
-    double y;
-    double z=0;
-};
-
-class Triangle {
-private:
-    vector<double> alpha[3];
-    
-    Point points[3];
-    
-    // Функция для вычисления расстояния между двумя точками
-    double distance(Point p1, Point p2) {
-        double dx = p2.x - p1.x;
-        double dy = p2.y - p1.y;
-        return sqrt(pow(dx, 2) + pow(dy, 2));
-    }
-
-    // Функция для вычисления площади треугольника по трем вершинам
-    double calculateTriangleArea(Point p1, Point p2, Point p3) {
-        double a = distance(p1, p2);
-        double b = distance(p2, p3);
-        double c = distance(p3, p1);
-        double s = (a + b + c) / 2.0;
-        return sqrt(s * (s - a) * (s - b) * (s - c));
-    }
-    
-    double calculateL(Point p1, Point p2, Point d){
-        double res;
-        res=((d.x-p1.x)*(p2.y-p1.y))-((d.y-p1.y)*(p2.x-p1.x));
-        return res;
-    }
-    
-    //Вычисляем Пси_1 Пси_2 Пси_3
-    double calculatePsi_i(int i, Point d){
-        Point p1, p2, p3;
-        p1=points[0]; p2=points[1]; p3=points[2];
-        double res;
-        i--;
-        if (i==0) res=calculateL(p2, p3, d);
-        if (i==1) res=calculateL(p1, p3, d);
-        if (i==2) res=calculateL(p1, p2, d);
-        return res;
-    }
-    
-    //Вычисляем  Фи_1 Фи_2 Фи_3
-    double calculateFi(int i, Point d){
-        Point p1, p2, p3;
-        p1=points[0]; p2=points[1]; p3=points[2];
-        double res;
-        res = calculatePsi_i(i, d)/calculatePsi_i(i, points[i-1]);
-        return res;
-    }
-    
-
-public:
-    Triangle(double x1, double y1, double x2, double y2, double x3, double y3) {
-        points[0] = {x1, y1};
-        points[1] = {x2, y2};
-        points[2] = {x3, y3};
-    }
-    
-    Triangle(){
-        
-    }
-    
-    Triangle(Point a, Point b, Point c){
-        points[0] = a;
-        points[1] = b;
-        points[2] = c;
-    }
-    
-    
-    // Функция для проверки, лежит ли заданная точка внутри треугольника
-    bool isPointInside(double x, double y) {
-        Point t = {x,y};
-
-        // Вычисление площадей подтреугольников
-        double areaTotal = calculateTriangleArea(points[0], points[1], points[2]);
-        double area1 = calculateTriangleArea(points[0], points[1], t);
-        double area2 = calculateTriangleArea(t, points[1], points[2]);
-        double area3 = calculateTriangleArea(points[0], t, points[2]);
-
-        // Если сумма площадей подтреугольников равна площади треугольника, то точка лежит внутри треугольника
-        return abs(areaTotal - (area1 + area2 + area3)) < 1e-6;
-    }
-    
-    double Pf(double x, double y){
-        Point d;
-        d.x=x;
-        d.y=y;
-        double res=0;
-        for(int i=1; i<=3; i++){
-            //double fi_i=calculateFi(i, d);
-            //double fn_znch=fn(points[i-1].x, points[i-1].y);
-            res=res+calculateFi(i, d)*fn(points[i-1].x, points[i-1].y);
-        }
-        return res;
-    }
-    
-    Point getVertex1() const { return points[0]; }
-    Point getVertex2() const { return points[1]; }
-    Point getVertex3() const { return points[2]; }
-    
-};
-
-double fn(double x, double y){
-    return x*x+y*y;
-}
-
+//Создает сетку точек в прямоугольнике
 vector<Point> MakeaNet(double x1, double y1, double x2, double y2, int n){
     vector<Point> Points;
     double dx = (x2 - x1) / n;
