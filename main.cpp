@@ -29,6 +29,7 @@
 #include "Triangle.hpp"
 #include "Point.hpp"
 #include "inputFunction.hpp"
+#include <random>
 
 using namespace std;
 
@@ -51,6 +52,7 @@ vector<Point> MakeaNet(double x1, double y1, double x2, double y2, int n){
     return Points;
 }
 
+//Функция считает интерпалиционные значения функции для сетки, которая создается внутри прямоугольника, параметр n влияет на маштаб сетки
 vector<Point> calculatePfValuesForNet(vector<Triangle> triangles, double x1, double y1, double x2, double y2, int n){
     vector<Point> Points = MakeaNet(x1, y1, x2, y2, n);
     for(int i=0; i<Points.size(); i++){
@@ -127,6 +129,49 @@ vector<Triangle> Make_Triangulation_Delane(Triangle MasterTriangle, vector<Point
     return triangles;
 }
 
+vector<Point> generateRandomPointsInsideTriangle(Triangle triangle, int n) {
+    vector<Point> randomPoints;
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> dis(0.0, 1.0);
+
+    for (int i = 0; i < n; ++i) {
+        double r1 = dis(gen);
+        double r2 = dis(gen);
+
+        if (r1 + r2 <= 1.0) {
+            double x = triangle.getVertex1().x + r1 * (triangle.getVertex2().x - triangle.getVertex1().x) +
+                       r2 * (triangle.getVertex3().x - triangle.getVertex1().x);
+            double y = triangle.getVertex1().y + r1 * (triangle.getVertex2().y - triangle.getVertex1().y) +
+                       r2 * (triangle.getVertex3().y - triangle.getVertex1().y);
+            randomPoints.push_back({x, y});
+        }
+        else i--;
+    }
+    
+    return randomPoints;
+}
+
+void writeTriangulationToFile(vector<Triangle> Triangles, const string& filename){
+    ofstream file(filename);
+    if(file.is_open()){
+        for(int i=0; i<Triangles.size(); i++){
+            Point v1, v2, v3;
+            v1=Triangles[i].getVertex1();
+            v2=Triangles[i].getVertex2();
+            v3=Triangles[i].getVertex3();
+            file << v1.x << " " << v1.y << " " << v1.z << endl << v2.x << " " << v2.y << " " << v2.z << endl;
+            file << endl;
+            file << v2.x << " " << v2.y << " " << v2.z << endl << v3.x << " " << v3.y << " " << v3.z << endl;
+            file << endl;
+            file << v3.x << " " << v3.y << " " << v3.z << endl << v1.x << " " << v1.y << " " << v1.z << endl;
+            file << endl;
+        }
+        cout << "Triangulation writen to file";
+    }
+    else cout << "Unable to open triangulation file";
+}
+
 int main() {
     double x1 = -10, y1 = -10;
     double x2 = 10, y2 = 10;
@@ -152,28 +197,19 @@ int main() {
         }
     }
     
-    //cout << Triangles[0].Pf(0, 0)<<  endl;
-    
-    //последний параметр отвечает за то насколько мелкой будет сетка
-    
+
+    //Код случайного набора точек внтури мастер треугольника
     vector<Triangle> Triangles2;
-    vector<Point> Point2(5);
-    
-    Point2[0] = {0, 0};
-    Point2[1] = {1, 1};
-    Point2[2] = {-1, -1};
-    Point2[3] = {3, 4};
-    Point2[4] = {-5, 2};
-    
-    for(int i=0; i<Point2.size(); i++){
-        Point2[i].z=fn(Point2[i].x, Point2[i].y);
-    }
-    
+    vector<Point> Points2;
     Triangle MasterTriangle(-10, -10, -10, 10, 10, 0);
     
-    Triangles2 = Make_Triangulation_Delane(MasterTriangle, Point2);
+    //Генерируем n случайных точек внутри Мастре треугольника
+    Points2=generateRandomPointsInsideTriangle(MasterTriangle, 20000);
     
-    vector<Point> AproxPoints = calculatePfValuesForNet(Triangles2, x1, y1, x2, y2, 50);
+    //Делаем треангуляцию Делане
+    Triangles2 = Make_Triangulation_Delane(MasterTriangle, Points2);
+    
+    vector<Point> AproxPoints = calculatePfValuesForNet(Triangles2, x1, y1, x2, y2, 70);
     
     //считаем реальные значения в точках  (x,y)
     
@@ -188,6 +224,18 @@ int main() {
     
     write_points(RealPoints, "original_points.txt");
     write_points(AproxPoints, "interpolated_points.txt");
+    
+    
+    for(int i=0; i<Points2.size(); i++){
+        cout << i << " " << Points2[i].x << " " << Points2[i].y << " " << MasterTriangle.isPointInside(Points2[i].x, Points2[i].y) <<  endl;
+    }
+    
+    vector<Triangle> helpMasterTriangle;
+    helpMasterTriangle.push_back(MasterTriangle);
+    
+    writeTriangulationToFile(Triangles2, "triangulation_points.txt");
+    writeTriangulationToFile(helpMasterTriangle, "Master_Triangle.txt");
+    cout << endl << "Num of Triangles is=" << Triangles2.size() << endl;
     
     return 0;
 }

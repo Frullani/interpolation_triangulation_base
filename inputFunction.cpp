@@ -8,5 +8,5 @@
 #include "inputFunction.hpp"
 
 double fn(double x, double y){
-    return x*x+y*y;
+    return sin(x)*5+10;
 }

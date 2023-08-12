@@ -7,7 +7,7 @@
 
 #ifndef inputFunction_hpp
 #define inputFunction_hpp
-
+#include <math.h>
 
 double fn(double x, double y);
 
